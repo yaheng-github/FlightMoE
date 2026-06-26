@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Large data files and preprocessed datasets
+data/preprocessed/*.npz
+data/preprocessed/spectral_images/
+data/**/*.csv
+Data_processing_tools/RflyMAD dataset/
+
+# Model checkpoints and logs (large binary files)
+checkpoints/
+logs/
+*.pt
+*.pth
+*.pkl
+*.ckpt
+
+# Experiment outputs (large)
+experiments/scores/*.npz
+experiments/router_v1/*.npz
+experiments/gdn_ablation_fast/*.npz
+experiments/scores_smoke/*.npz
+
+# Claude / Codex / IDE session artifacts
+.claude/
+.Codex/
+.agents/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# External toolkit - not part of this repository
+# See README for the official RflyMAD data processing tools
+Data_processing_tools/
+
+# Third-party reference code (not our contribution)
+third_party/

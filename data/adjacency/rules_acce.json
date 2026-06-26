@@ -1,0 +1,83 @@
+[
+  {
+    "type": "mean_L",
+    "sensor_i": "_sensor_combined_0_accelerometer_m_s2[0]",
+    "sensor_j": "_vehicle_attitude_0_q[2]",
+    "confidence": 1.0,
+    "cooccur": 60,
+    "support_i": 60,
+    "support_j": 60
+  },
+  {
+    "type": "mean_L",
+    "sensor_i": "_sensor_combined_0_accelerometer_m_s2[0]",
+    "sensor_j": "_vehicle_magnetometer_0_magnetometer_ga[2]",
+    "confidence": 1.0,
+    "cooccur": 60,
+    "support_i": 60,
+    "support_j": 60
+  },
+  {
+    "type": "mean_L",
+    "sensor_i": "_vehicle_attitude_0_q[2]",
+    "sensor_j": "_vehicle_magnetometer_0_magnetometer_ga[2]",
+    "confidence": 1.0,
+    "cooccur": 60,
+    "support_i": 60,
+    "support_j": 60
+  },
+  {
+    "type": "mean_L",
+    "sensor_i": "_vehicle_local_position_0_y",
+    "sensor_j": "_vehicle_gps_position_0_lon",
+    "confidence": 1.0,
+    "cooccur": 44,
+    "support_i": 60,
+    "support_j": 44
+  },
+  {
+    "type": "mean_H",
+    "sensor_i": "_sensor_combined_0_accelerometer_m_s2[2]",
+    "sensor_j": "_vehicle_magnetometer_0_magnetometer_ga[0]",
+    "confidence": 1.0,
+    "cooccur": 60,
+    "support_i": 60,
+    "support_j": 60
+  },
+  {
+    "type": "diff_L",
+    "sensor_i": "_vehicle_local_position_0_x",
+    "sensor_j": "_vehicle_gps_position_0_lat",
+    "confidence": 1.0,
+    "cooccur": 36,
+    "support_i": 60,
+    "support_j": 36
+  },
+  {
+    "type": "diff_L",
+    "sensor_i": "_vehicle_local_position_0_y",
+    "sensor_j": "_vehicle_gps_position_0_lon",
+    "confidence": 1.0,
+    "cooccur": 36,
+    "support_i": 60,
+    "support_j": 36
+  },
+  {
+    "type": "diff_H",
+    "sensor_i": "_vehicle_local_position_0_x",
+    "sensor_j": "_vehicle_gps_position_0_lat",
+    "confidence": 1.0,
+    "cooccur": 60,
+    "support_i": 60,
+    "support_j": 60
+  },
+  {
+    "type": "diff_H",
+    "sensor_i": "_vehicle_local_position_0_y",
+    "sensor_j": "_vehicle_gps_position_0_lon",
+    "confidence": 1.0,
+    "cooccur": 28,
+    "support_i": 60,
+    "support_j": 28
+  }
+]

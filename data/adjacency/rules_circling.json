@@ -1,0 +1,56 @@
+[
+  {
+    "type": "mean_L",
+    "sensor_i": "_vehicle_air_data_0_baro_alt_meter",
+    "sensor_j": "_vehicle_gps_position_0_alt",
+    "confidence": 0.9919,
+    "cooccur": 122,
+    "support_i": 123,
+    "support_j": 123
+  },
+  {
+    "type": "mean_L",
+    "sensor_i": "_vehicle_local_position_0_y",
+    "sensor_j": "_vehicle_gps_position_0_lon",
+    "confidence": 1.0,
+    "cooccur": 110,
+    "support_i": 123,
+    "support_j": 110
+  },
+  {
+    "type": "diff_L",
+    "sensor_i": "_vehicle_local_position_0_x",
+    "sensor_j": "_vehicle_gps_position_0_lat",
+    "confidence": 1.0,
+    "cooccur": 123,
+    "support_i": 123,
+    "support_j": 123
+  },
+  {
+    "type": "diff_L",
+    "sensor_i": "_vehicle_local_position_0_y",
+    "sensor_j": "_vehicle_gps_position_0_lon",
+    "confidence": 1.0,
+    "cooccur": 115,
+    "support_i": 123,
+    "support_j": 115
+  },
+  {
+    "type": "diff_H",
+    "sensor_i": "_vehicle_local_position_0_y",
+    "sensor_j": "_vehicle_gps_position_0_lon",
+    "confidence": 1.0,
+    "cooccur": 112,
+    "support_i": 123,
+    "support_j": 112
+  },
+  {
+    "type": "diff_H",
+    "sensor_i": "_battery_status_0_current_a",
+    "sensor_j": "_vehicle_gps_position_0_fix_type",
+    "confidence": 1.0,
+    "cooccur": 5,
+    "support_i": 123,
+    "support_j": 5
+  }
+]
