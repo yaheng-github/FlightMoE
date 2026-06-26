@@ -78,8 +78,8 @@ training:
     lr: 1.0e-3
     weight_decay: 1.0e-4
     freeze_router: true
-    loss_type: "bce"      # "bce" or "ranking"
-    margin: 1.0           # for ranking loss
+    loss_type: "ranking"    # "bce" or "ranking"
+    margin: 1.0             # for ranking loss
 
   stage2:
     epochs: 10
