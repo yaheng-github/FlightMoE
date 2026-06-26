@@ -107,6 +107,9 @@ class FlightMoEv2(nn.Module):
             expert_weights: [B, 4]
             load_balance_loss: scalar
         """
+        if self.ablation.get("no_spectral", False):
+            spectral = None
+
         enc_out = self.encoder(temporal, spectral, phase)  # [B, output_dim]
 
         if self.use_gnn:
@@ -253,7 +256,7 @@ def main():
         "--ablation",
         type=str,
         default=None,
-        choices=["no_phase", "no_gnn", "no_sparse_router"],
+        choices=["no_phase", "no_gnn", "no_sparse_router", "no_spectral"],
         help="Ablation variant to run",
     )
     args = parser.parse_args()

@@ -94,7 +94,7 @@ def main():
         "--ablation",
         type=str,
         default=None,
-        choices=["no_phase", "no_gnn", "no_sparse_router"],
+        choices=["no_phase", "no_gnn", "no_sparse_router", "no_spectral"],
         help="Ablation variant",
     )
     args = parser.parse_args()
