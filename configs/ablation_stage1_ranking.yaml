@@ -1,0 +1,11 @@
+# FlightMoE v2 config variant: margin ranking loss in Stage 1
+base_config: flightmoe_v2.yaml
+
+training:
+  stage1:
+    loss_type: "ranking"
+    margin: 1.0
+
+logging:
+  output_dir: "./experiments/flightmoe_v2/ablation_stage1_ranking"
+  checkpoint_dir: "./checkpoints/flightmoe_v2/ablation_stage1_ranking"

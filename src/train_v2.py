@@ -185,7 +185,7 @@ def build_loaders(cfg):
     return train_loader, val_loader
 
 
-def train_one_epoch(model, loader, optimizer, criterion, device, loss_weights, stage=1, perturb_cfg=None):
+def train_one_epoch(model, loader, optimizer, criterion, device, loss_weights, stage=1, perturb_cfg=None, stage1_loss_type="bce", stage1_margin=1.0):
     model.train()
     total_loss = 0.0
     for batch in loader:
@@ -199,18 +199,22 @@ def train_one_epoch(model, loader, optimizer, criterion, device, loss_weights, s
         optimizer.zero_grad()
 
         if stage == 1:
-            # Contrastive: clean samples -> label 0, perturbed -> label 1
             final_score_clean, _, _, _ = model(temporal, spectral, phase, modality_mask)
-            loss_clean = criterion(final_score_clean, torch.zeros_like(final_score_clean))
 
             # Apply perturbation
             temporal_aug, spectral_aug, mask_aug, _ = composite_perturbation(
                 temporal.clone(), spectral.clone() if spectral is not None else None, perturb_cfg
             )
             final_score_aug, _, _, _ = model(temporal_aug, spectral_aug, phase, mask_aug)
-            loss_aug = criterion(final_score_aug, torch.ones_like(final_score_aug))
 
-            loss = (loss_clean + loss_aug) / 2.0
+            if stage1_loss_type == "ranking":
+                # Margin ranking: perturbed should score higher than clean
+                loss = F.relu(stage1_margin - (final_score_aug - final_score_clean)).mean()
+            else:
+                # BCE: clean -> 0, perturbed -> 1
+                loss_clean = criterion(final_score_clean, torch.zeros_like(final_score_clean))
+                loss_aug = criterion(final_score_aug, torch.ones_like(final_score_aug))
+                loss = (loss_clean + loss_aug) / 2.0
         else:
             labels = batch["label"].float().to(device)
             final_score, expert_scores, expert_weights, lb_loss = model(
@@ -300,10 +304,13 @@ def main():
             weight_decay=cfg["training"]["stage1"]["weight_decay"],
         )
         epochs = args.epochs_override or cfg["training"]["stage1"]["epochs"]
+        stage1_loss_type = cfg["training"]["stage1"].get("loss_type", "bce")
+        stage1_margin = cfg["training"]["stage1"].get("margin", 1.0)
         for epoch in range(epochs):
             loss = train_one_epoch(
                 model, train_loader, opt, criterion, device, loss_weights,
-                stage=1, perturb_cfg=cfg["perturbation"]
+                stage=1, perturb_cfg=cfg["perturbation"],
+                stage1_loss_type=stage1_loss_type, stage1_margin=stage1_margin,
             )
             print(f"Epoch {epoch+1}/{epochs}, loss: {loss:.4f}")
         torch.save(model.state_dict(), ckpt_dir / "stage1.pt")
