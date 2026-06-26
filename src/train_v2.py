@@ -57,6 +57,7 @@ class FlightMoEv2(nn.Module):
         )
 
         self.use_gnn = not ablation.get("no_gnn", False)
+        self.gnn_refine_encoder = cfg["model"]["gnn"].get("refine_encoder", False)
         self.gnn = PhysicalConsistencyGNN(
             input_dim=enc_cfg["output_dim"],
             node_num=gnn_cfg["node_dim"],
@@ -116,6 +117,8 @@ class FlightMoEv2(nn.Module):
             calibrated, residual, edge_weights = self.gnn(enc_out, phase)
             consistency_feat = calibrated.mean(dim=1)  # [B, gnn_dim]
             consistency_feat = self.consistency_proj(consistency_feat)  # [B, output_dim]
+            if self.gnn_refine_encoder:
+                enc_out = enc_out + consistency_feat  # refine encoder output with GNN
         else:
             residual = torch.zeros(enc_out.size(0), self.gnn.node_num, device=enc_out.device)
             consistency_feat = torch.zeros_like(enc_out)

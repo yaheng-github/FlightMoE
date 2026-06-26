@@ -9,8 +9,21 @@ import yaml
 DEFAULT_CONFIG_PATH = Path(__file__).parents[2] / "configs" / "flightmoe_v2.yaml"
 
 
+def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
+    """Recursively merge override into base."""
+    result = dict(base)
+    for key, value in override.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = _deep_merge(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
 def load_config(config_path: Union[str, Path] = DEFAULT_CONFIG_PATH) -> Dict[str, Any]:
     """Load YAML config and return nested dict.
+
+    Supports optional `base_config` key for inheritance.
 
     Args:
         config_path: path to YAML config file.
@@ -27,6 +40,11 @@ def load_config(config_path: Union[str, Path] = DEFAULT_CONFIG_PATH) -> Dict[str
 
     if cfg is None:
         raise ValueError(f"Config file is empty: {config_path}")
+
+    if "base_config" in cfg:
+        base_path = config_path.parent / cfg.pop("base_config")
+        base_cfg = load_config(base_path)
+        cfg = _deep_merge(base_cfg, cfg)
 
     return cfg
 

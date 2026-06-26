@@ -1,0 +1,10 @@
+# FlightMoE v2 config variant: GNN refines encoder output
+base_config: flightmoe_v2.yaml
+
+model:
+  gnn:
+    refine_encoder: true
+
+logging:
+  output_dir: "./experiments/flightmoe_v2/ablation_gnn_refine"
+  checkpoint_dir: "./checkpoints/flightmoe_v2/ablation_gnn_refine"

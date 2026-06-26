@@ -46,6 +46,7 @@ model:
     heads: 1
     dropout: 0.1
     topk_neighbors: 5
+    refine_encoder: false   # if true, add GNN consistency feature back to encoder output
 
   # Sparse expert router
   router:
