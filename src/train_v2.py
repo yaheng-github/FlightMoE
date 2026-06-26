@@ -33,8 +33,11 @@ from utils.experiment_utils import compute_metrics, save_json
 class FlightMoEv2(nn.Module):
     """End-to-end FlightMoE v2 model."""
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, ablation=None):
         super().__init__()
+        if ablation is None:
+            ablation = {}
+        self.ablation = ablation
         model_cfg = cfg["model"]
         enc_cfg = model_cfg["encoder"]
         gnn_cfg = model_cfg["gnn"]
@@ -50,8 +53,10 @@ class FlightMoEv2(nn.Module):
             cross_attention_dropout=enc_cfg["cross_attention_dropout"],
             output_dim=enc_cfg["output_dim"],
             dropout=enc_cfg.get("dropout", 0.1),
+            use_phase=not ablation.get("no_phase", False),
         )
 
+        self.use_gnn = not ablation.get("no_gnn", False)
         self.gnn = PhysicalConsistencyGNN(
             input_dim=enc_cfg["output_dim"],
             node_num=gnn_cfg["node_dim"],
@@ -65,10 +70,13 @@ class FlightMoEv2(nn.Module):
         self.consistency_proj = nn.Linear(gnn_cfg["gnn_dim"], enc_cfg["output_dim"])
 
         router_input_dim = enc_cfg["output_dim"] + 3  # + residual mean/std + mask mean
+        top_k = router_cfg["top_k"]
+        if ablation.get("no_sparse_router", False):
+            top_k = router_cfg["num_experts"]  # dense routing
         self.router = SparseExpertRouter(
             input_dim=router_input_dim,
             num_experts=router_cfg["num_experts"],
-            top_k=router_cfg["top_k"],
+            top_k=top_k,
             hidden_dim=router_cfg["hidden_dim"],
             dropout=router_cfg["dropout"],
         )
@@ -101,11 +109,13 @@ class FlightMoEv2(nn.Module):
         """
         enc_out = self.encoder(temporal, spectral, phase)  # [B, output_dim]
 
-        calibrated, residual, edge_weights = self.gnn(enc_out, phase)
-        # calibrated: [B, 41, gnn_dim], residual: [B, 41]
-
-        consistency_feat = calibrated.mean(dim=1)  # [B, gnn_dim]
-        consistency_feat = self.consistency_proj(consistency_feat)  # [B, output_dim]
+        if self.use_gnn:
+            calibrated, residual, edge_weights = self.gnn(enc_out, phase)
+            consistency_feat = calibrated.mean(dim=1)  # [B, gnn_dim]
+            consistency_feat = self.consistency_proj(consistency_feat)  # [B, output_dim]
+        else:
+            residual = torch.zeros(enc_out.size(0), self.gnn.node_num, device=enc_out.device)
+            consistency_feat = torch.zeros_like(enc_out)
 
         # Router input
         residual_mean = residual.mean(dim=1, keepdim=True)  # [B, 1]
@@ -239,6 +249,13 @@ def main():
     parser.add_argument("--stage", type=int, default=0, help="0=all stages, 1/2/3=single stage")
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--epochs_override", type=int, default=None)
+    parser.add_argument(
+        "--ablation",
+        type=str,
+        default=None,
+        choices=["no_phase", "no_gnn", "no_sparse_router"],
+        help="Ablation variant to run",
+    )
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -249,15 +266,22 @@ def main():
     )
     print(f"Using device: {device}")
 
+    ablation = {args.ablation: True} if args.ablation else {}
+    if ablation:
+        print(f"Ablation: {args.ablation}")
+
     train_loader, val_loader = build_loaders(cfg)
-    model = FlightMoEv2(cfg).to(device)
+    model = FlightMoEv2(cfg, ablation=ablation).to(device)
 
     criterion = nn.BCEWithLogitsLoss()
     loss_weights = cfg["training"]["loss_weights"]
 
     output_dir = Path(cfg["logging"]["output_dir"])
-    output_dir.mkdir(parents=True, exist_ok=True)
     ckpt_dir = Path(cfg["logging"]["checkpoint_dir"])
+    if args.ablation:
+        output_dir = output_dir / f"ablation_{args.ablation}"
+        ckpt_dir = ckpt_dir / f"ablation_{args.ablation}"
+    output_dir.mkdir(parents=True, exist_ok=True)
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
     # Stage 1: train encoder + experts

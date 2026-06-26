@@ -143,8 +143,10 @@ class PhaseAwareMultiViewEncoder(nn.Module):
         cross_attention_dropout: float = 0.1,
         output_dim: int = 256,
         dropout: float = 0.1,
+        use_phase: bool = True,
     ):
         super().__init__()
+        self.use_phase = use_phase
         self.temporal_branch = TemporalBranch(
             input_dim=temporal_dim,
             out_dim=temporal_embed_dim,
@@ -165,7 +167,7 @@ class PhaseAwareMultiViewEncoder(nn.Module):
         )
         self.spectral_proj = nn.Linear(spectral_embed_dim, temporal_embed_dim)
 
-        fusion_dim = temporal_embed_dim + phase_embed_dim
+        fusion_dim = temporal_embed_dim + (phase_embed_dim if use_phase else 0)
         self.fusion = nn.Sequential(
             nn.Linear(fusion_dim, 512),
             nn.ReLU(),
@@ -185,8 +187,6 @@ class PhaseAwareMultiViewEncoder(nn.Module):
         B = temporal.size(0)
         temp_feat = self.temporal_branch(temporal)  # [B, temporal_embed_dim]
 
-        phase_feat = self.phase_embedding(phase)  # [B, phase_embed_dim]
-
         if spectral is not None:
             spec_feat = self.spectral_branch(spectral)  # [B, spectral_embed_dim]
             spec_feat_proj = self.spectral_proj(spec_feat).unsqueeze(1)  # [B, 1, temporal_embed_dim]
@@ -196,7 +196,12 @@ class PhaseAwareMultiViewEncoder(nn.Module):
         else:
             fused = temp_feat
 
-        x = torch.cat([fused, phase_feat], dim=-1)  # [B, temporal_embed_dim + phase_embed_dim]
+        if self.use_phase:
+            phase_feat = self.phase_embedding(phase)  # [B, phase_embed_dim]
+            x = torch.cat([fused, phase_feat], dim=-1)  # [B, temporal_embed_dim + phase_embed_dim]
+        else:
+            x = fused
+
         x = self.fusion(x)  # [B, output_dim]
         return x
 

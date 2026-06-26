@@ -90,6 +90,13 @@ def main():
     parser.add_argument("--checkpoint", type=str, required=True)
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--output_dir", type=str, default=None)
+    parser.add_argument(
+        "--ablation",
+        type=str,
+        default=None,
+        choices=["no_phase", "no_gnn", "no_sparse_router"],
+        help="Ablation variant",
+    )
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -98,10 +105,16 @@ def main():
     )
     print(f"Using device: {device}")
 
+    ablation = {args.ablation: True} if args.ablation else {}
+    if ablation:
+        print(f"Ablation: {args.ablation}")
+
     output_dir = Path(args.output_dir or cfg["logging"]["output_dir"])
+    if args.ablation:
+        output_dir = output_dir / f"ablation_{args.ablation}"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    model = FlightMoEv2(cfg).to(device)
+    model = FlightMoEv2(cfg, ablation=ablation).to(device)
     state = torch.load(args.checkpoint, map_location=device)
     model.load_state_dict(state)
     print(f"Loaded checkpoint: {args.checkpoint}")
