@@ -1,0 +1,139 @@
+# FlightMoE v2 configuration
+
+# ---------------------------------------------------------------------------
+# Data paths and loading
+# ---------------------------------------------------------------------------
+data:
+  train_npz: "./data/preprocessed/train.npz"
+  val_npz: "./data/preprocessed/val.npz"
+  test_closed_npz: "./data/preprocessed/test_closed.npz"
+  test_open_npz: "./data/preprocessed/test_open.npz"
+  adjacency_dir: "./data/adjacency"
+
+  batch_size: 128
+  num_workers: 4
+  pin_memory: true
+
+# ---------------------------------------------------------------------------
+# Model architecture
+# ---------------------------------------------------------------------------
+model:
+  # Phase-aware multi-view encoder
+  encoder:
+    temporal_embed_dim: 256
+    spectral_embed_dim: 256
+    phase_embed_dim: 64
+    cross_attention_heads: 8
+    cross_attention_dropout: 0.1
+    output_dim: 256
+
+    temporal_branch:
+      hidden_dims: [64, 128, 256]
+      kernel_size: 3
+      dropout: 0.1
+
+    spectral_branch:
+      base_channels: 32
+      num_groups: 4
+      dropout: 0.1
+
+  # Physical consistency GNN
+  gnn:
+    node_dim: 41
+    input_dim: 256          # projected encoder output per sensor
+    gnn_dim: 128
+    num_layers: 2
+    heads: 1
+    dropout: 0.1
+    topk_neighbors: 5
+
+  # Sparse expert router
+  router:
+    hidden_dim: 128
+    num_experts: 4
+    top_k: 2
+    dropout: 0.1
+
+  # Expert anomaly score heads
+  experts:
+    embed_dim: 256          # input from encoder/gnn
+    hidden_dim: 128
+
+  # Final anomaly head (optional, can also use weighted sum of expert scores)
+  anomaly_head:
+    hidden_dim: 64
+    dropout: 0.1
+
+# ---------------------------------------------------------------------------
+# Training
+# ---------------------------------------------------------------------------
+training:
+  seed: 42
+  device: "cuda"            # "cuda" or "cpu"
+
+  # Three-stage training
+  stage1:
+    epochs: 10
+    lr: 1.0e-3
+    weight_decay: 1.0e-4
+    freeze_router: true
+
+  stage2:
+    epochs: 10
+    lr: 1.0e-4
+    weight_decay: 1.0e-4
+    freeze_encoder: true
+    freeze_gnn: true
+    freeze_experts: true
+
+  stage3:
+    epochs: 20
+    lr: 1.0e-4
+    weight_decay: 1.0e-4
+    lr_scheduler: "cosine"
+    early_stop_patience: 10
+
+  # Loss weights
+  loss_weights:
+    anomaly: 1.0
+    inv: 1.0
+    consist: 2.0
+    route: 1.0
+    load_balance: 0.01
+
+  # Validation
+  val_ratio: 0.2
+
+# ---------------------------------------------------------------------------
+# Counterfactual perturbations
+# ---------------------------------------------------------------------------
+perturbation:
+  # Probability of applying any perturbation during training
+  apply_prob: 0.5
+
+  missing:
+    mask_ratio: 0.1         # fraction of sensors/tokens to mask
+
+  async:
+    max_shift: 5            # max time steps to shift a sensor group
+
+  noise:
+    std: 0.1                # Gaussian noise std relative to signal scale
+
+  spectral_artifact:
+    patch_ratio: 0.1        # fraction of spectral patches to corrupt
+    intensity: 0.5
+
+  domain_shift:
+    scale_range: [0.9, 1.1] # multiplicative shift per sensor group
+
+# ---------------------------------------------------------------------------
+# Logging and checkpoints
+# ---------------------------------------------------------------------------
+logging:
+  output_dir: "./experiments/flightmoe_v2"
+  checkpoint_dir: "./checkpoints/flightmoe_v2"
+  log_interval: 50          # steps
+  save_interval: 1          # epochs
+  use_tensorboard: true
+  use_wandb: false

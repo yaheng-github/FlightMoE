@@ -33,11 +33,9 @@ ENV/
 *.swo
 *~
 
-# Large data files and preprocessed datasets
-data/preprocessed/*.npz
-data/preprocessed/spectral_images/
-data/**/*.csv
-Data_processing_tools/RflyMAD dataset/
+# Large data files and preprocessed datasets (root only)
+/data/
+!/data/.gitkeep
 
 # Model checkpoints and logs (large binary files)
 checkpoints/
@@ -47,11 +45,21 @@ logs/
 *.pkl
 *.ckpt
 
-# Experiment outputs (large)
-experiments/scores/*.npz
-experiments/router_v1/*.npz
-experiments/gdn_ablation_fast/*.npz
-experiments/scores_smoke/*.npz
+# Experiment outputs
+experiments/
+!experiments/.gitkeep
+
+# Documentation and stage summaries (only README.md is kept)
+docs/
+*.md
+!README.md
+progress*.md
+*.xlsx
+*.xls
+*.docx
+*.pdf
+*.pptx
+.markdownlint.json
 
 # Claude / Codex / IDE session artifacts
 .claude/
