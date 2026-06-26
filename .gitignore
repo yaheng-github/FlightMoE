@@ -49,6 +49,9 @@ logs/
 experiments/
 !experiments/.gitkeep
 
+# Paper materials (local only, large figures)
+paper_materials/
+
 # Documentation and stage summaries (only README.md is kept)
 docs/
 *.md
