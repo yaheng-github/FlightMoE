@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).parents[1]))
 
 from data.flightmoe_dataset import FlightMoEDataset
 from models.anomaly_head import AnomalyHead
+from models.perturbation import composite_perturbation
 from models.encoder import PhaseAwareMultiViewEncoder
 from models.expert_heads import ExpertPool
 from models.gnn_consistency import PhysicalConsistencyGNN
@@ -168,7 +169,7 @@ def build_loaders(cfg):
     return train_loader, val_loader
 
 
-def train_one_epoch(model, loader, optimizer, criterion, device, loss_weights, stage=1):
+def train_one_epoch(model, loader, optimizer, criterion, device, loss_weights, stage=1, perturb_cfg=None):
     model.train()
     total_loss = 0.0
     for batch in loader:
@@ -177,17 +178,31 @@ def train_one_epoch(model, loader, optimizer, criterion, device, loss_weights, s
         if spectral is not None:
             spectral = spectral.to(device)
         phase = batch["phase"].to(device)
-        labels = batch["label"].float().to(device)
         modality_mask = batch["modality_mask"].to(device)
 
         optimizer.zero_grad()
-        final_score, expert_scores, expert_weights, lb_loss = model(
-            temporal, spectral, phase, modality_mask
-        )
 
-        loss = criterion(final_score, labels)
-        if stage >= 3:
-            loss = loss + loss_weights.get("load_balance", 0.01) * lb_loss
+        if stage == 1:
+            # Contrastive: clean samples -> label 0, perturbed -> label 1
+            final_score_clean, _, _, _ = model(temporal, spectral, phase, modality_mask)
+            loss_clean = criterion(final_score_clean, torch.zeros_like(final_score_clean))
+
+            # Apply perturbation
+            temporal_aug, spectral_aug, mask_aug, _ = composite_perturbation(
+                temporal.clone(), spectral.clone() if spectral is not None else None, perturb_cfg
+            )
+            final_score_aug, _, _, _ = model(temporal_aug, spectral_aug, phase, mask_aug)
+            loss_aug = criterion(final_score_aug, torch.ones_like(final_score_aug))
+
+            loss = (loss_clean + loss_aug) / 2.0
+        else:
+            labels = batch["label"].float().to(device)
+            final_score, expert_scores, expert_weights, lb_loss = model(
+                temporal, spectral, phase, modality_mask
+            )
+            loss = criterion(final_score, labels)
+            if stage >= 3:
+                loss = loss + loss_weights.get("load_balance", 0.01) * lb_loss
 
         loss.backward()
         optimizer.step()
@@ -256,7 +271,10 @@ def main():
         )
         epochs = args.epochs_override or cfg["training"]["stage1"]["epochs"]
         for epoch in range(epochs):
-            loss = train_one_epoch(model, train_loader, opt, criterion, device, loss_weights, stage=1)
+            loss = train_one_epoch(
+                model, train_loader, opt, criterion, device, loss_weights,
+                stage=1, perturb_cfg=cfg["perturbation"]
+            )
             print(f"Epoch {epoch+1}/{epochs}, loss: {loss:.4f}")
         torch.save(model.state_dict(), ckpt_dir / "stage1.pt")
         model.router.requires_grad_(True)
@@ -275,7 +293,7 @@ def main():
         )
         epochs = args.epochs_override or cfg["training"]["stage2"]["epochs"]
         for epoch in range(epochs):
-            loss = train_one_epoch(model, train_loader, opt, criterion, device, loss_weights, stage=2)
+            loss = train_one_epoch(model, val_loader, opt, criterion, device, loss_weights, stage=2)
             print(f"Epoch {epoch+1}/{epochs}, loss: {loss:.4f}")
         torch.save(model.state_dict(), ckpt_dir / "stage2.pt")
         model.encoder.requires_grad_(True)
@@ -295,7 +313,7 @@ def main():
         best_auc = -1.0
         patience = 0
         for epoch in range(epochs):
-            loss = train_one_epoch(model, train_loader, opt, criterion, device, loss_weights, stage=3)
+            loss = train_one_epoch(model, val_loader, opt, criterion, device, loss_weights, stage=3)
             metrics = evaluate(model, val_loader, device)
             auc = metrics["auc_roc"]
             print(f"Epoch {epoch+1}/{epochs}, loss: {loss:.4f}, val AUC: {auc:.4f}")
