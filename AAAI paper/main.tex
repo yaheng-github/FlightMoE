@@ -192,6 +192,46 @@ Figure~\ref{fig:router} shows the router's phase-conditioned expert activation p
 \label{fig:router}
 \end{figure}
 
+Table~ef{tab:phase_test_open} reports per-phase metrics on the open test set. Performance is consistently high across phases, with a slight drop during hover and decel. Table~ef{tab:fault_test_open} breaks down open-set performance by unseen fault type. The model generalizes well to accelerometer, gyroscope, magnetometer, and GPS faults, while barometer anomalies are relatively harder.
+
+\begin{table}[htbp]
+\centering
+\caption{Per-phase metrics on test\\_open.}
+\label{tab:phase_test_open}
+\begin{tabular}{lcccccccccc}
+\toprule
+Phase & AUC & F1 & P & R & N \\
+\midrule
+Hover & 0.9094 & 0.9372 & 0.9322 & 0.9424 & 3174 \\
+Waypoint & 0.9375 & 0.9139 & 0.9210 & 0.9069 & 8049 \\
+Velocity & 0.9691 & 0.9677 & 0.9507 & 0.9853 & 3180 \\
+Circling & 0.9773 & 0.9606 & 0.9831 & 0.9392 & 7412 \\
+Accel & 0.9911 & 0.9680 & 0.9805 & 0.9558 & 3021 \\
+Decel & 0.8930 & 0.9179 & 0.8680 & 0.9740 & 3110 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\begin{table}[htbp]
+\centering
+\caption{Per-fault-type metrics on test\\_open.}
+\label{tab:fault_test_open}
+\begin{tabular}{lcccccccccc}
+\toprule
+Fault Type & AUC & F1 & P & R & N \\
+\midrule
+accelerometer & 0.9684 & 0.9391 & 0.9682 & 0.9117 & 5405 \\
+gyroscope & 0.9859 & 0.9589 & 0.9667 & 0.9513 & 5529 \\
+magnetometer & 0.9741 & 0.9372 & 0.9659 & 0.9101 & 5584 \\
+barometer & 0.9083 & 0.8775 & 0.9746 & 0.7980 & 4907 \\
+GPS & 0.9903 & 0.9635 & 0.9715 & 0.9555 & 5552 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
 \section{Conclusion}
 FlightMoE v2 advances UAV anomaly detection by unifying phase-aware multimodal encoding and sparse expert routing. The key insight is that flight phase and fault mode jointly determine which features and experts are most informative. By learning sparse, phase-conditioned combinations of temporal, spectral, and consistency experts, the model achieves strong closed-set detection and substantially improved open-set generalization on RflyMAD. Future work will strengthen the physical-consistency GNN integration, explore online detection with streaming telemetry, and extend the framework to fault isolation.
 
