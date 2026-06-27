@@ -38,11 +38,13 @@ class PhysicalConsistencyGNN(nn.Module):
         num_layers: int = 2,
         heads: int = 1,
         dropout: float = 0.1,
+        learnable_edge_weight: bool = False,
     ):
         super().__init__()
         self.node_num = node_num
         self.gnn_dim = gnn_dim
         self.num_layers = num_layers
+        self.learnable_edge_weight = learnable_edge_weight
 
         self.project = nn.Linear(input_dim, node_num * gnn_dim)
 
@@ -66,12 +68,29 @@ class PhysicalConsistencyGNN(nn.Module):
         # Cache edge_index per phase on first forward
         self._edge_index_cache = {}
 
-    def _get_edge_index(self, phase: int, device: torch.device) -> torch.Tensor:
+        if learnable_edge_weight:
+            # Create learnable edge weights per phase, lazy init on first forward
+            self._edge_weight_params = nn.ParameterDict()
+        else:
+            self._edge_weight_params = None
+
+    def _get_edge_index(self, phase: int, device: torch.device):
         if phase not in self._edge_index_cache:
             phase_name = PHASE_NAMES[phase]
             edge_index = load_phase_edge_index(phase_name, threshold=0.0)
             self._edge_index_cache[phase] = edge_index
-        return self._edge_index_cache[phase].to(device)
+        edge_index = self._edge_index_cache[phase].to(device)
+
+        if self.learnable_edge_weight:
+            key = str(phase)
+            if key not in self._edge_weight_params:
+                num_edges = edge_index.size(1)
+                self._edge_weight_params[key] = nn.Parameter(
+                    torch.ones(num_edges, device=device) * 0.5
+                )
+            edge_weight = torch.sigmoid(self._edge_weight_params[key])
+            return edge_index, edge_weight
+        return edge_index, None
 
     def forward(
         self,
@@ -100,10 +119,10 @@ class PhysicalConsistencyGNN(nn.Module):
         calibrated_list = []
         edge_weights_list = []
         for b in range(B):
-            edge_index = self._get_edge_index(int(phase[b].item()), device)
+            edge_index, edge_weight = self._get_edge_index(int(phase[b].item()), device)
             xb = x[b]  # [node_num, gnn_dim]
             for layer in self.gnn_layers:
-                xb_out, (_, alpha) = layer(xb, edge_index, return_attention_weights=True)
+                xb_out, (_, alpha) = layer(xb, edge_index, edge_weight=edge_weight, return_attention_weights=True)
                 xb = xb + xb_out  # residual
                 xb = F.relu(xb)
 
@@ -111,6 +130,8 @@ class PhysicalConsistencyGNN(nn.Module):
 
             # alpha: [E, heads] -> average over heads
             alpha_mean = alpha.mean(dim=-1)  # [E]
+            if edge_weight is not None:
+                alpha_mean = alpha_mean * edge_weight
             edge_weights_list.append(alpha_mean)
 
         calibrated = torch.stack(calibrated_list, dim=0)  # [B, node_num, gnn_dim]

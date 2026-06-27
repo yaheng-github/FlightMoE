@@ -46,12 +46,13 @@ class GraphLayer(nn.Module):
         zeros(self.att_em_j)
         zeros(self.bias)
 
-    def forward(self, x, edge_index, embedding=None, return_attention_weights=False):
+    def forward(self, x, edge_index, embedding=None, edge_weight=None, return_attention_weights=False):
         """
         Args:
             x: [N, in_channels]
             edge_index: [2, E] (source -> target)
             embedding: [N, embed_dim] (optional)
+            edge_weight: [E] learnable edge gate (optional)
         """
         N = x.size(0)
         x = self.lin(x)  # [N, heads * out_channels]
@@ -96,6 +97,8 @@ class GraphLayer(nn.Module):
 
         # 聚合: sum over neighbors
         msg = x_src * alpha.unsqueeze(-1)  # [E, heads, out_channels]
+        if edge_weight is not None:
+            msg = msg * edge_weight.unsqueeze(-1).unsqueeze(-1)  # [E, heads, out_channels]
 
         # scatter_add to destination nodes
         out = torch.zeros(N, self.heads, self.out_channels, device=x.device, dtype=x.dtype)

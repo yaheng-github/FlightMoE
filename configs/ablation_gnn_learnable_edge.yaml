@@ -1,0 +1,10 @@
+# FlightMoE v2 config variant: learnable GNN edge weights
+base_config: flightmoe_v2.yaml
+
+model:
+  gnn:
+    learnable_edge_weight: true
+
+logging:
+  output_dir: "./experiments/flightmoe_v2/ablation_gnn_learnable_edge"
+  checkpoint_dir: "./checkpoints/flightmoe_v2/ablation_gnn_learnable_edge"

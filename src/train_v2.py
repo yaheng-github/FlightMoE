@@ -59,6 +59,7 @@ class FlightMoEv2(nn.Module):
         self.use_gnn = not ablation.get("no_gnn", False)
         self.gnn_refine_encoder = cfg["model"]["gnn"].get("refine_encoder", False)
         self.gnn_to_anomaly_head = cfg["model"]["gnn"].get("to_anomaly_head", False)
+        self.gnn_learnable_edge = cfg["model"]["gnn"].get("learnable_edge_weight", False)
         self.gnn = PhysicalConsistencyGNN(
             input_dim=enc_cfg["output_dim"],
             node_num=gnn_cfg["node_dim"],
@@ -66,6 +67,7 @@ class FlightMoEv2(nn.Module):
             num_layers=gnn_cfg["num_layers"],
             heads=gnn_cfg["heads"],
             dropout=gnn_cfg["dropout"],
+            learnable_edge_weight=self.gnn_learnable_edge,
         )
 
         # Project consistency feature to same dim as encoder output
