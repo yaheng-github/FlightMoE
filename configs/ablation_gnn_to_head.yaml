@@ -1,0 +1,10 @@
+# FlightMoE v2 config variant: GNN features fed to AnomalyHead
+base_config: flightmoe_v2.yaml
+
+model:
+  gnn:
+    to_anomaly_head: true
+
+logging:
+  output_dir: "./experiments/flightmoe_v2/ablation_gnn_to_head"
+  checkpoint_dir: "./checkpoints/flightmoe_v2/ablation_gnn_to_head"

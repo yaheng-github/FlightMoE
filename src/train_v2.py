@@ -58,6 +58,7 @@ class FlightMoEv2(nn.Module):
 
         self.use_gnn = not ablation.get("no_gnn", False)
         self.gnn_refine_encoder = cfg["model"]["gnn"].get("refine_encoder", False)
+        self.gnn_to_anomaly_head = cfg["model"]["gnn"].get("to_anomaly_head", False)
         self.gnn = PhysicalConsistencyGNN(
             input_dim=enc_cfg["output_dim"],
             node_num=gnn_cfg["node_dim"],
@@ -88,8 +89,12 @@ class FlightMoEv2(nn.Module):
             dropout=enc_cfg.get("dropout", 0.1),
         )
 
+        anomaly_head_input_dim = enc_cfg["output_dim"]
+        if self.gnn_to_anomaly_head:
+            anomaly_head_input_dim += enc_cfg["output_dim"]
+
         self.anomaly_head = AnomalyHead(
-            input_dim=enc_cfg["output_dim"],
+            input_dim=anomaly_head_input_dim,
             hidden_dim=model_cfg["anomaly_head"]["hidden_dim"],
             dropout=model_cfg["anomaly_head"].get("dropout", 0.1),
         )
@@ -137,7 +142,11 @@ class FlightMoEv2(nn.Module):
         fused = (expert_weights * expert_scores).sum(dim=1)  # [B]
 
         # Optional final head
-        final_score = self.anomaly_head(enc_out) + fused
+        if self.gnn_to_anomaly_head and self.use_gnn:
+            head_input = torch.cat([enc_out, consistency_feat], dim=-1)
+        else:
+            head_input = enc_out
+        final_score = self.anomaly_head(head_input) + fused
 
         return final_score, expert_scores, expert_weights, load_balance_loss
 
