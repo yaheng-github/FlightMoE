@@ -1,0 +1,10 @@
+# FlightMoE v2 config variant: Top-k=4 (dense) ablation
+base_config: flightmoe_v2.yaml
+
+model:
+  router:
+    top_k: 4
+
+logging:
+  output_dir: "./experiments/flightmoe_v2/ablation_topk_4"
+  checkpoint_dir: "./checkpoints/flightmoe_v2/ablation_topk_4"
