@@ -63,14 +63,15 @@ def main():
             "test_open_auc": gdn_data["full"]["test_open"]["global"]["auc_roc"],
             "test_open_f1": gdn_data["full"]["test_open"]["global"]["f1"],
         },
-        extract_metrics(v2_data, "FlightMoE v2 (Full)"),
     ]
 
-    # Add Stage1 Ranking variant if available
+    # Prefer Stage1 Ranking run as the canonical v2 result; fall back to default run.
     ranking_path = ROOT / "experiments/server_downloads/ablation_stage1_ranking/flightmoe_v2_results.json"
     if ranking_path.exists():
         ranking_data = load_json(ranking_path)
-        rows.append(extract_metrics(ranking_data, "FlightMoE v2 (Stage1 Ranking)"))
+        rows.append(extract_metrics(ranking_data, "FlightMoE v2"))
+    else:
+        rows.append(extract_metrics(v2_data, "FlightMoE v2"))
 
     # Markdown table
     md_lines = [
