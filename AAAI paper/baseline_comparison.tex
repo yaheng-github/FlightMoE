@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\caption{Comparison with baseline methods on RflyMAD.}
+\label{tab:baseline}
+\begin{tabular}{lcccccc}
+\toprule
+Model & Val AUC & Val F1 & Closed AUC & Closed F1 & Open AUC & Open F1 \\
+\midrule
+FlightMoE v1 (MLP Router) & 0.9833 & 0.9593 & 0.9611 & 0.9355 & 0.9138 & 0.8606 \\
+GDN (phase graph) & 0.9506 & 0.9191 & 0.9491 & 0.9238 & 0.8959 & 0.8594 \\
+GDN (full graph) & 0.9698 & 0.9333 & 0.9601 & 0.9370 & 0.9032 & 0.8745 \\
+FlightMoE v2 & 0.9973 & 0.9800 & 0.9773 & 0.9539 & 0.9500 & 0.9197 \\
+\bottomrule
+\end{tabular}
+\end{table}

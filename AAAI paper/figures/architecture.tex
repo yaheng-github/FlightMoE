@@ -1,0 +1,71 @@
+\begin{tikzpicture}[
+    node distance=1.2cm and 1.5cm,
+    box/.style={rectangle, draw, rounded corners, minimum width=2.4cm, minimum height=0.8cm, align=center, font=\small},
+    smallbox/.style={rectangle, draw, rounded corners, minimum width=1.8cm, minimum height=0.7cm, align=center, font=\footnotesize},
+    arrow/.style={->, >=stealth, thick},
+    label/.style={font=\footnotesize, align=center}
+]
+
+% Inputs
+\node[box, fill=blue!10] (xt) {$X_t \in \mathbb{R}^{T \times F}$\\Temporal};
+\node[box, fill=blue!10, right=of xt] (st) {$S_t \in \mathbb{R}^{G \times F \times T' \times C}$\\Spectral};
+\node[box, fill=blue!10, right=of st] (pt) {$p_t \in \{0,\dots,5\}$\\Phase};
+
+% Encoder branches
+\node[box, fill=green!10, below=of xt] (tcnn) {1D-CNN\\Temporal Branch};
+\node[box, fill=green!10, below=of st] (scnn) {2D-CNN\\Spectral Branch};
+\node[box, fill=green!10, below=of pt] (pembed) {Phase\\Embedding};
+
+% Cross attention and fusion
+\node[box, fill=yellow!20, below=of tcnn, xshift=1.2cm] (cross) {Cross-Modal\\Attention};
+\node[box, fill=yellow!20, below=of cross] (z) {Fused Feature\\$z \in \mathbb{R}^{256}$};
+
+% GNN
+\node[box, fill=orange!15, below=of z, xshift=-2.5cm] (gnn) {Physical\\Consistency GNN};
+\node[smallbox, fill=orange!15, below=of gnn] (resid) {Residual\\$r$};
+
+% Router
+\node[box, fill=purple!15, below=of z, xshift=2.5cm] (router) {Sparse Top-$k$\\Router};
+\node[smallbox, fill=purple!15, below=of router] (weights) {Weights\\$w \in \mathbb{R}^4$};
+
+% Experts
+\node[box, fill=red!10, below=of weights] (experts) {Expert Heads};
+\node[smallbox, fill=red!10, below=0.6cm of experts, xshift=-2.4cm] (burst) {Burst};
+\node[smallbox, fill=red!10, below=0.6cm of experts, xshift=-0.8cm] (drift) {Drift};
+\node[smallbox, fill=red!10, below=0.6cm of experts, xshift=0.8cm] (spec) {Spectral};
+\node[smallbox, fill=red!10, below=0.6cm of experts, xshift=2.4cm] (cons) {Consistency};
+
+% Final score
+\node[box, fill=gray!15, below=3.5cm of experts] (head) {AnomalyHead + $\sum_i w_i s_i$};
+\node[box, fill=gray!25, below=of head] (score) {Anomaly Score\\$a_t$};
+
+% Arrows
+\draw[arrow] (xt) -- (tcnn);
+\draw[arrow] (st) -- (scnn);
+\draw[arrow] (pt) -- (pembed);
+\draw[arrow] (tcnn) -- (cross);
+\draw[arrow] (scnn) -- (cross);
+\draw[arrow] (cross) -- (z);
+\draw[arrow] (pembed) -| (z);
+
+\draw[arrow] (z) -- (gnn);
+\draw[arrow] (gnn) -- (resid);
+\draw[arrow] (z) -- (router);
+\draw[arrow] (resid) -| (router);
+\draw[arrow] (router) -- (weights);
+
+\draw[arrow] (weights) -- (experts);
+\draw[arrow] (z) |- ([yshift=0.3cm]experts.north);
+\draw[arrow] (experts) -- (burst);
+\draw[arrow] (experts) -- (drift);
+\draw[arrow] (experts) -- (spec);
+\draw[arrow] (experts) -- (cons);
+
+\draw[arrow] (burst) |- (head);
+\draw[arrow] (drift) |- (head);
+\draw[arrow] (spec) |- (head);
+\draw[arrow] (cons) |- (head);
+\draw[arrow] (z) -| (head);
+\draw[arrow] (head) -- (score);
+
+\end{tikzpicture}
